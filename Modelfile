@@ -1,0 +1,12 @@
+# 基于 qwen3:0.6b 创建自定义模型
+FROM qwen3:0.6b
+
+# 设置重复惩罚参数
+PARAMETER repeat_penalty 1.1
+
+# 可选：设置其他参数
+PARAMETER temperature 0.1
+PARAMETER top_p 0.9
+
+# 可选：添加系统提示词
+SYSTEM "你是一个文档结构分析专家。"
