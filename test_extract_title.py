@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from outliner.ollama_client import OllamaClient
+from outliner.outliner import OllamaClient
 
 def test_extract_paragraph_title():
     """

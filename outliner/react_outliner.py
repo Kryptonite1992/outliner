@@ -16,22 +16,7 @@ def chunk_text(text: str, max_chars: int = 3000, overlap: int = 200) -> list:
 		i += step
 	return chunks
 
-def chunk_text(text: str, max_chars: int = 3000, overlap: int = 200) -> list:
-	"""
-	基于字符滑动窗口分块，支持重叠。
-	"""
-	if not text:
-		return []
-	chunks = []
-	step = max_chars - overlap if max_chars > overlap else max_chars
-	i = 0
-	while i < len(text):
-		chunk = text[i:i+max_chars]
-		chunks.append(chunk)
-		if i + max_chars >= len(text):
-			break
-		i += step
-	return chunks
+
 
 
 def call_outline_llm(client: OllamaClient, text: str) -> Dict[str, List[Dict[str, object]]]:
