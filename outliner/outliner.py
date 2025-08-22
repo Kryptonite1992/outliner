@@ -54,7 +54,7 @@ class Outliner:
             max_chars: 每块最大字符数
             overlap: 块之间的重叠字符数
         """
-        self.pre_chunks = chunk_text(text, max_chars=max_chars, overlap=overlap)
+        self.pre_chunks = Outliner.chunk_text(text, max_chars=max_chars, overlap=overlap)
 
     def chat(self, messages, temperature=0.1, top_p=0.9, repeat_penalty=1.1):
         """
@@ -196,6 +196,7 @@ class Outliner:
                 print(f"跳过空章节 {i+1}")
                 continue
             print(f"正在处理第 {i+1} 个章节...")
+            print(f"分段内容如下:\n{chapter_content}\n{'-'*40}")
             try:
                 # 直接调用 extract_paragraph_title
                 self.extract_paragraph_title(chapter_content)
@@ -209,38 +210,42 @@ class Outliner:
         return self.get_memory_summary()
 
 
-def remove_think_tags(text):
-    """
-    去除 <think>...</think> 标签及其中内容。
-    """
-    return re.sub(r'<think>[\s\S]*?</think>', '', text, flags=re.IGNORECASE)
+
+    @staticmethod
+    def remove_think_tags(text):
+        """
+        去除 <think>...</think> 标签及其中内容。
+        """
+        return re.sub(r'<think>[\s\S]*?</think>', '', text, flags=re.IGNORECASE)
 
 
-# 只保留无错误的滑动窗口分块函数
-def chunk_text(text: str, max_chars: int = 3000, overlap: int = 200) -> list:
-    """
-    只做滑动窗口分块，截取原文内容。
-    """
-    if not text:
-        return []
-    chunks = []
-    step = max_chars - overlap if max_chars > overlap else max_chars
-    i = 0
-    while i < len(text):
-        chunk = text[i:i+max_chars]
-        chunks.append(chunk)
-        if i + max_chars >= len(text):
-            break
-        i += step
-    return chunks
+
+    @staticmethod
+    def chunk_text(text: str, max_chars: int = 3000, overlap: int = 200) -> list:
+        """
+        只做滑动窗口分块，截取原文内容。
+        """
+        if not text:
+            return []
+        chunks = []
+        step = max_chars - overlap if max_chars > overlap else max_chars
+        i = 0
+        while i < len(text):
+            chunk = text[i:i+max_chars]
+            chunks.append(chunk)
+            if i + max_chars >= len(text):
+                break
+            i += step
+        return chunks
+
 
 
 def test_ollama_client():
     """
-                self.add_to_memory(error_title, chapter_level)
+    self.add_to_memory(error_title, chapter_level)
     """
     client = Outliner()
-    
+
     # 测试基本对话功能
     print("=== 测试基本对话功能 ===")
     messages = [
@@ -248,13 +253,13 @@ def test_ollama_client():
     ]
     try:
         reply = client.chat(messages)
-        print("模型回复:", remove_think_tags(reply))
+        print("模型回复:", Outliner.remove_think_tags(reply))
     except Exception as e:
         print("请求失败:", e)
-    
+
     # 测试批量章节处理功能
     print("\n=== 测试批量章节处理功能 ===")
-    
+
     # 模拟一些带章节序号的内容
     sample_chapters = [
         "第1章 人工智能简介\n人工智能（Artificial Intelligence，AI）是计算机科学的一个分支，它企图了解智能的实质，并生产出一种新的能以人类智能相似的方式做出反应的智能机器。该领域的研究包括机器人、语言识别、图像识别、自然语言处理和专家系统等。人工智能从诞生以来，理论和技术日益成熟，应用领域也不断扩大。",
@@ -262,43 +267,35 @@ def test_ollama_client():
         "第3章 深度学习\n深度学习是机器学习的一个子集，它模拟人脑神经网络的结构和功能。深度学习使用多层神经网络来学习数据的表示，这些网络能够自动提取特征并进行复杂的模式识别。深度学习在图像识别、语音识别、自然语言处理等领域取得了突破性进展。卷积神经网络（CNN）适用于图像处理，循环神经网络（RNN）适用于序列数据处理，变换器（Transformer）在自然语言处理中表现优异。",
         "第4章 自然语言处理\n自然语言处理（Natural Language Processing，NLP）是人工智能和计算语言学的一个分支，旨在让计算机能够理解、解释和生成人类语言。NLP涉及多个层面的语言分析，包括词法分析、句法分析、语义分析和语用分析。现代NLP技术广泛应用于机器翻译、情感分析、文本摘要、问答系统、聊天机器人等场景。近年来，基于深度学习的语言模型如GPT、BERT等取得了显著成果。"
     ]
-    
+
     try:
         # 处理所有章节
         extracted_titles = client.process_chapters(sample_chapters)
-        
+
         print(f"\n成功提取 {len(extracted_titles)} 个章节标题:")
         for i, title in enumerate(extracted_titles):
             print(f"{i+1}. {title}")
-        
+
         print(f"\n当前memory中共有 {client.get_memory_count()} 个章节")
-        
+
         # 显示完整大纲
         print("\n" + client.get_chapter_outline())
-        
+
         # 测试长文本处理
         print("\n=== 测试长文本自动分割处理 ===")
-        long_text = """
-        云计算是一种基于互联网的计算方式，通过这种方式，共享的软硬件资源和信息可以按需提供给计算机和其他设备。
-        云计算是继1980年代大型机到客户端-服务器的大转变之后的又一种巨变。云计算描述了一种基于互联网的新的IT服务
-        增加、使用和交付模式，通常涉及通过互联网来提供动态易扩展且经常是虚拟化的资源。
-        资源汇集起来，使用多租户模型为多个消费者服务。快速弹性使资源能够快速灵活地提供和释放。服务可测量性
-        确保云系统能够自动控制和优化资源使用。
-        
-        云计算服务模式主要分为三种：基础设施即服务（IaaS）、平台即服务（PaaS）和软件即服务（SaaS）。
-        IaaS提供虚拟化的计算基础设施，如虚拟机、存储和网络。PaaS提供应用程序开发和部署平台。
-        SaaS直接提供完整的应用程序服务。这三种模式为不同需求的用户提供了灵活的选择。
-        """
-        
+        # 从外部文件读取长文本内容
+        with open("long_text.txt", "r", encoding="utf-8") as f:
+            long_text = f.read()
+
         # 清空之前的memory开始新测试
         client.clear_memory()
         print("已清空memory，开始测试长文本处理...")
-        
+
         long_text_titles = client.process_text_to_chapters(long_text, max_chars=500, overlap=50)
         print(f"\n长文本处理完成，提取 {len(long_text_titles)} 个章节标题:")
         for i, title in enumerate(long_text_titles):
             print(f"{i+1}. {title}")
-            
+
     except Exception as e:
         print("批量处理失败:", e)
 
